@@ -1,8 +1,18 @@
-export function add(a: number, b: number): number {
-  return a + b;
-}
+import { Hono } from "hono";
+import { cors, logger, prettyJSON } from "hono/middleware";
+import { serve } from "server";
 
-// Learn more at https://docs.deno.com/runtime/manual/examples/module_metadata#concepts
-if (import.meta.main) {
-  console.log("Add 2 + 3 =", add(2, 3));
-}
+import { book } from "./router/book.ts";
+import { db } from "./db/connect.ts";
+
+const api = new Hono();
+
+api.use("*", logger());
+api.use("*", prettyJSON());
+api.use("/api/*", cors());
+
+api.route("/api", book);
+api.notFound((c) => c.json({ message: "Not Found" }, 404));
+
+await db.sync();
+serve(api.fetch);
